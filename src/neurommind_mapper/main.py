@@ -4,39 +4,11 @@ import sys
 from dotenv import load_dotenv
 from streamlit.components.v1 import html
 
-# Add current directory to Python path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
-
-# Now import utils (try multiple approaches)
-try:
-    from utils import (scrape_text, summarize_with_claude, generate_mindmap_with_claude, 
-                      generate_flowchart_with_claude, generate_timeline_with_claude, 
-                      generate_network_with_claude, create_mermaid_html, normalize_url, 
-                      validate_and_fix_mermaid)
-except ImportError:
-    try:
-        from neurommind_mapper.utils import (scrape_text, summarize_with_claude, generate_mindmap_with_claude,
-                                           generate_flowchart_with_claude, generate_timeline_with_claude,
-                                           generate_network_with_claude, create_mermaid_html, normalize_url,
-                                           validate_and_fix_mermaid)
-    except ImportError:
-        # Last resort - import from full path
-        import importlib.util
-        utils_path = os.path.join(current_dir, 'utils.py')
-        spec = importlib.util.spec_from_file_location("utils", utils_path)
-        utils = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(utils)
-        scrape_text = utils.scrape_text
-        summarize_with_claude = utils.summarize_with_claude
-        generate_mindmap_with_claude = utils.generate_mindmap_with_claude
-        generate_flowchart_with_claude = utils.generate_flowchart_with_claude
-        generate_timeline_with_claude = utils.generate_timeline_with_claude
-        generate_network_with_claude = utils.generate_network_with_claude
-        create_mermaid_html = utils.create_mermaid_html
-        normalize_url = utils.normalize_url
-        validate_and_fix_mermaid = utils.validate_and_fix_mermaid
+# Import utils from the same package
+from .utils import (scrape_text, summarize_with_claude, generate_mindmap_with_claude, 
+                   generate_flowchart_with_claude, generate_timeline_with_claude, 
+                   generate_network_with_claude, create_mermaid_html, normalize_url, 
+                   validate_and_fix_mermaid)
 
 # Load environment variables
 load_dotenv()
@@ -528,6 +500,3 @@ def main():
         show_main_page()
     elif st.session_state.current_page == "library":
         show_library_page()
-
-if __name__ == "__main__":
-    main()

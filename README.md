@@ -3,7 +3,7 @@
 **An AI-powered mind mapping tool designed for neurodiverse learners**
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8+-green.svg)
+![Python](https://img.shields.io/badge/python-3.12+-green.svg)
 ![UV](https://img.shields.io/badge/uv-0.8.8-purple.svg)
 ![Streamlit](https://img.shields.io/badge/streamlit-latest-red.svg)
 
@@ -77,6 +77,20 @@ journey
       Save/Share Results: 4: User
 ```
 
+## 📁 Project Structure
+
+```
+neurommind-mapper/
+├── app.py                      # Entry point for Streamlit
+├── pyproject.toml              # Package configuration  
+├── .env                        # API keys (create this)
+└── src/
+    └── neurommind_mapper/      # Main package
+        ├── __init__.py         # Package initialization
+        ├── main.py             # Streamlit application
+        └── utils.py            # Helper functions
+```
+
 ## 🛠️ Technology Stack
 
 ```mermaid
@@ -112,7 +126,7 @@ graph LR
 
 ### Prerequisites
 
-- **macOS** with Python 3.8+
+- **macOS** with Python 3.12+
 - **VSCode** (recommended)
 - **UV package manager** (we'll install this)
 - **Claude API key** from [Anthropic](https://console.anthropic.com/)
@@ -143,6 +157,9 @@ uv init --name neurommind-mapper --package
 
 # Install dependencies (10-100x faster than pip!)
 uv add anthropic requests beautifulsoup4 streamlit python-dotenv
+
+# Install package in editable mode
+uv pip install -e .
 ```
 
 ### 3. Setup API Key
@@ -166,10 +183,10 @@ ANTHROPIC_API_KEY=sk-ant-your-actual-api-key-here
 code .
 ```
 
-Create these files in `src/neurommind_mapper/`:
+Create these files in the proper locations:
 
-- `utils.py` - Core functions for scraping and AI processing
-- `main.py` - Streamlit web application
+- `src/neurommind_mapper/utils.py` - Core functions for scraping and AI processing
+- `src/neurommind_mapper/main.py` - Streamlit web application
 - `app.py` - Entry point (in project root)
 
 > 📋 **Full code available in the repository files**
@@ -178,10 +195,10 @@ Create these files in `src/neurommind_mapper/`:
 
 ```bash
 # Launch the app
-uv run streamlit run app.py
+streamlit run app.py
 
 # Or create an alias for quick access
-echo 'alias mindmap="cd ~/Projects/neurommind-mapper && uv run streamlit run app.py"' >> ~/.zshrc
+echo 'alias mindmap="cd ~/Projects/neurommind-mapper && streamlit run app.py"' >> ~/.zshrc
 ```
 
 ## 📱 Usage Guide
@@ -391,6 +408,7 @@ source ~/.zshrc
 ```bash
 # Verify file structure
 ls -la src/neurommind_mapper/
+# Should show: __init__.py, main.py, utils.py
 
 # Check Python path
 python -c "import sys; print(sys.path)"
@@ -480,6 +498,7 @@ cd neurommind-mapper
 
 # Setup development environment
 uv sync --dev
+uv pip install -e .  # Install in editable mode
 
 # Install pre-commit hooks
 uv run pre-commit install
