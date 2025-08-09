@@ -101,9 +101,6 @@ st.markdown("""
 
 def show_diagram_gallery():
     """Display simplified diagram type selection"""
-    st.markdown("### 🎨 Choose Your Visualization Style")
-    st.markdown("Select how you want to see the information:")
-    
     # Initialize session state for diagram choice
     if 'selected_diagram' not in st.session_state:
         st.session_state.selected_diagram = 'mindmap'
@@ -115,49 +112,37 @@ def show_diagram_gallery():
         if st.button("🧠 **Mind Map**", 
                     key="mindmap_btn", 
                     help="Perfect for organizing concepts and ideas hierarchically",
-                    use_container_width=True):
+                    use_container_width=True,
+                    type="primary" if st.session_state.selected_diagram == 'mindmap' else "secondary"):
             st.session_state.selected_diagram = 'mindmap'
-        
-        if st.session_state.selected_diagram == 'mindmap':
-            st.success("✅ Selected")
-        else:
-            st.caption("Great for ADHD learners")
+            st.rerun()
     
     with col2:
         if st.button("🔄 **Flowchart**", 
                     key="flowchart_btn",
                     help="Ideal for processes, steps, and workflows",
-                    use_container_width=True):
+                    use_container_width=True,
+                    type="primary" if st.session_state.selected_diagram == 'flowchart' else "secondary"):
             st.session_state.selected_diagram = 'flowchart'
-        
-        if st.session_state.selected_diagram == 'flowchart':
-            st.success("✅ Selected")
-        else:
-            st.caption("Best for processes")
+            st.rerun()
     
     with col3:
         if st.button("📅 **Timeline**", 
                     key="timeline_btn",
                     help="Perfect for historical events and sequences",
-                    use_container_width=True):
+                    use_container_width=True,
+                    type="primary" if st.session_state.selected_diagram == 'timeline' else "secondary"):
             st.session_state.selected_diagram = 'timeline'
-        
-        if st.session_state.selected_diagram == 'timeline':
-            st.success("✅ Selected")
-        else:
-            st.caption("Great for history")
+            st.rerun()
     
     with col4:
         if st.button("🕸️ **Network**", 
                     key="network_btn",
                     help="Shows relationships and connections between ideas",
-                    use_container_width=True):
+                    use_container_width=True,
+                    type="primary" if st.session_state.selected_diagram == 'network' else "secondary"):
             st.session_state.selected_diagram = 'network'
-        
-        if st.session_state.selected_diagram == 'network':
-            st.success("✅ Selected")
-        else:
-            st.caption("Shows connections")
+            st.rerun()
     
     return st.session_state.selected_diagram
 
@@ -187,40 +172,119 @@ def create_change_diagram_section(current_type, text, api_key):
             st.session_state.regenerate = True
             st.rerun()
 
-def main():
+def show_library_page():
+    """Display the diagram library page"""
+    st.markdown('<h1 class="main-header">📚 Diagram Library</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Explore different visualization types and see what works best for your content</div>', unsafe_allow_html=True)
+    
+    # Navigation back to main
+    if st.button("← Back to Create Diagram", key="back_to_main"):
+        st.session_state.current_page = "main"
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Library sections
+    tab1, tab2, tab3, tab4 = st.tabs(["🧠 Mind Maps", "🔄 Flowcharts", "📅 Timelines", "🕸️ Networks"])
+    
+    with tab1:
+        st.markdown("### 🧠 Mind Maps")
+        st.markdown("**Perfect for:** Concepts, topics, hierarchical information")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            Mind maps are ideal for:
+            - **Organizing complex topics** into digestible pieces
+            - **ADHD-friendly learning** with visual structure
+            - **Hierarchical relationships** between concepts
+            - **Academic articles** and research papers
+            """)
+        
+        with col2:
+            if st.button("🚀 Use Mind Map", key="use_mindmap", use_container_width=True):
+                st.session_state.selected_diagram = 'mindmap'
+                st.session_state.current_page = "main"
+                st.success("Mind Map selected! Switching to main page...")
+                st.rerun()
+    
+    with tab2:
+        st.markdown("### 🔄 Flowcharts")
+        st.markdown("**Perfect for:** Processes, decision trees, step-by-step guides")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            Flowcharts work best for:
+            - **Process documentation** and workflows
+            - **Decision trees** and conditional logic
+            - **Step-by-step tutorials** and guides
+            - **Algorithm explanations** and procedures
+            """)
+        
+        with col2:
+            if st.button("🚀 Use Flowchart", key="use_flowchart", use_container_width=True):
+                st.session_state.selected_diagram = 'flowchart'
+                st.session_state.current_page = "main"
+                st.success("Flowchart selected! Switching to main page...")
+                st.rerun()
+    
+    with tab3:
+        st.markdown("### 📅 Timelines")
+        st.markdown("**Perfect for:** Historical events, project phases, chronological content")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            Timelines excel at showing:
+            - **Historical sequences** and events
+            - **Project milestones** and phases
+            - **Company development** stories
+            - **Biographical information** and life events
+            """)
+        
+        with col2:
+            if st.button("🚀 Use Timeline", key="use_timeline", use_container_width=True):
+                st.session_state.selected_diagram = 'timeline'
+                st.session_state.current_page = "main"
+                st.success("Timeline selected! Switching to main page...")
+                st.rerun()
+    
+    with tab4:
+        st.markdown("### 🕸️ Concept Networks")
+        st.markdown("**Perfect for:** Showing relationships and connections between ideas")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            Networks are great for:
+            - **Interconnected concepts** and relationships
+            - **System architecture** and dependencies
+            - **Social connections** and networks
+            - **Complex topic relationships**
+            """)
+        
+        with col2:
+            if st.button("🚀 Use Network", key="use_network", use_container_width=True):
+                st.session_state.selected_diagram = 'network'
+                st.session_state.current_page = "main"
+                st.success("Network selected! Switching to main page...")
+                st.rerun()
+    
+    st.markdown("---")
+    st.markdown("### 💡 **Coming in Next Update**")
+    st.info("""
+    - **Live examples** of each diagram type
+    - **Interactive previews** with real Mermaid renders  
+    - **Sample code** you can copy and modify
+    - **Best practice guides** for each visualization type
+    """)
+
+def show_main_page():
+    """Display the main diagram creation page"""
     # Header
     st.markdown('<h1 class="main-header">🧠 NeuroMind Mapper</h1>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">An AI-powered tool to create visual diagrams for neurodiverse learners</div>', unsafe_allow_html=True)
-    
-    # Sidebar with instructions
-    with st.sidebar:
-        st.header("📝 How to Use")
-        st.markdown("""
-        **Simple 3-step process:**
-        
-        1. **📝 Enter URL** - Paste any article link
-        2. **🎨 Choose Type** - Pick your visualization style  
-        3. **🚀 Generate** - Create your diagram
-        4. **🔄 Try Different** - Switch types if desired
-        
-        **Great sources:**
-        - News articles (BBC, CNN, Reuters)
-        - Blog posts (Medium, personal blogs)
-        - Educational content
-        - Wikipedia articles
-        """)
-        
-        st.header("🎯 Why Visual Learning?")
-        st.markdown("""
-        - **65% are visual learners**
-        - **ADHD-friendly** structure
-        - **Quick understanding** of complex topics
-        - **Better memory** retention
-        """)
-        
-        st.header("📚 Coming Soon")
-        st.info("**Diagram Library** - Browse examples and learn about each visualization type")
-    
     
     # Main content area
     col1, col2 = st.columns([2, 1])
@@ -338,7 +402,7 @@ def main():
                 # Display diagram
                 st.markdown(f'<div class="success-box"><strong>🗺️ Your {selected_diagram.title()} Visualization</strong></div>', unsafe_allow_html=True)
                 html_content = create_mermaid_html(validated_code)
-                html(html_content, width=800, height=600)
+                html(html_content, width=None, height=500, scrolling=False)
                 
                 # Add option to try different diagram types
                 create_change_diagram_section(selected_diagram, text, api_key)
@@ -381,6 +445,89 @@ def main():
         - **Use Timeline** for historical content
         - **Flowcharts** shine with how-to guides
         """)
+
+def main():
+    # Initialize page state
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "main"
+    
+    # Sidebar navigation
+    with st.sidebar:
+        st.markdown("## 🧭 Navigation")
+        
+        # Main page button
+        if st.button("🏠 Create Diagram", 
+                    key="nav_main",
+                    use_container_width=True,
+                    type="primary" if st.session_state.current_page == "main" else "secondary"):
+            st.session_state.current_page = "main"
+            st.rerun()
+        
+        # Library page button  
+        if st.button("📚 Diagram Library", 
+                    key="nav_library",
+                    use_container_width=True,
+                    type="primary" if st.session_state.current_page == "library" else "secondary"):
+            st.session_state.current_page = "library"
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # Page-specific sidebar content
+        if st.session_state.current_page == "main":
+            st.header("📝 How to Use")
+            st.markdown("""
+            **Simple 3-step process:**
+            
+            1. **📝 Enter URL** - Paste any article link
+            2. **🎨 Choose Type** - Pick your visualization style  
+            3. **🚀 Generate** - Create your diagram
+            4. **🔄 Try Different** - Switch types if desired
+            
+            **Great sources:**
+            - News articles (BBC, CNN, Reuters)
+            - Blog posts (Medium, personal blogs)
+            - Educational content
+            - Wikipedia articles
+            """)
+            
+            st.header("🎯 Why Visual Learning?")
+            st.markdown("""
+            - **65% are visual learners**
+            - **ADHD-friendly** structure
+            - **Quick understanding** of complex topics
+            - **Better memory** retention
+            """)
+        
+        elif st.session_state.current_page == "library":
+            st.header("📚 Library Guide")
+            st.markdown("""
+            **Explore diagram types:**
+            
+            - **🧠 Mind Maps** - For concepts and ideas
+            - **🔄 Flowcharts** - For processes and workflows
+            - **📅 Timelines** - For chronological content
+            - **🕸️ Networks** - For interconnected ideas
+            
+            **How to use:**
+            1. Browse through the tabs
+            2. Read about each type
+            3. Click "Use [Type]" to select
+            4. Return to main page to generate
+            """)
+            
+            st.header("💡 Tips")
+            st.info("""
+            - **Start with examples** to understand each type
+            - **Match content to diagram** type for best results
+            - **Mind Maps** work for 80% of articles
+            """)
+    
+    # Display the selected page
+    if st.session_state.current_page == "main":
+        show_main_page()
+    elif st.session_state.current_page == "library":
+        show_library_page()
 
 if __name__ == "__main__":
     main()
