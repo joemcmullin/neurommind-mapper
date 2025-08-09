@@ -6,10 +6,27 @@ from streamlit.components.v1 import html
 
 # Add current directory to Python path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
-# Now import utils
-from utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html
+# Now import utils (try multiple approaches)
+try:
+    from utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url
+except ImportError:
+    try:
+        from neurommind_mapper.utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url
+    except ImportError:
+        # Last resort - import from full path
+        import importlib.util
+        utils_path = os.path.join(current_dir, 'utils.py')
+        spec = importlib.util.spec_from_file_location("utils", utils_path)
+        utils = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(utils)
+        scrape_text = utils.scrape_text
+        summarize_with_claude = utils.summarize_with_claude
+        generate_mindmap_with_claude = utils.generate_mindmap_with_claude
+        create_mermaid_html = utils.create_mermaid_html
+        normalize_url = utils.normalize_url
 
 # Load environment variables
 load_dotenv()
@@ -58,16 +75,17 @@ def main():
     with st.sidebar:
         st.header("📝 How to Use")
         st.markdown("""
-        1. **Enter a URL** in the input field
-        2. **Click Generate** to create your mindmap
-        3. **View the summary** and visual mindmap
-        4. **Save or share** your results
+        1. **Enter a website URL** (we'll add https:// automatically!)
+        2. **Examples**: `google.com`, `bbc.com/news`, `medium.com/@author/article`
+        3. **Click Generate** to create your mindmap
+        4. **View the summary** and visual mindmap
+        5. **Save or share** your results
         
-        **Best for:**
-        - News articles
-        - Blog posts
+        **Great sources:**
+        - News articles (BBC, CNN, Reuters)
+        - Blog posts (Medium, personal blogs)
         - Educational content
-        - Research papers
+        - Wikipedia articles
         """)
         
         st.header("🎯 Benefits")
@@ -86,30 +104,38 @@ def main():
         with st.form("mindmap_form", clear_on_submit=False):
             url = st.text_input(
                 "🔗 Enter a URL to create a mindmap:",
-                placeholder="https://example.com/article",
-                help="Paste any article URL here"
+                placeholder="google.com, bbc.com/news, medium.com/@author/article",
+                help="Enter any website URL - we'll handle the https:// part!"
             )
+            
+            # Show URL preview if user has entered something
+            if url and url.strip():
+                normalized_url = normalize_url(url.strip())
+                st.info(f"📡 Will fetch: **{normalized_url}**")
             
             submitted = st.form_submit_button("🚀 Generate Mindmap", use_container_width=True)
         
         if submitted and url:
-            # Validate URL
-            if not url.startswith(('http://', 'https://')):
-                st.error("Please enter a valid URL starting with http:// or https://")
+            # Normalize the URL
+            normalized_url = normalize_url(url.strip())
+            
+            # Validate normalized URL
+            if not normalized_url or not normalized_url.startswith(('http://', 'https://')):
+                st.error("❌ Please enter a valid website URL (e.g., google.com)")
                 return
             
             # Get API key
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                st.error("Please set your ANTHROPIC_API_KEY in the .env file")
+                st.error("❌ Please set your ANTHROPIC_API_KEY in the .env file")
                 return
             
             # Process the URL
-            with st.spinner("🔍 Scraping content..."):
-                text = scrape_text(url)
+            with st.spinner(f"🔍 Scraping content from {normalized_url}..."):
+                text = scrape_text(normalized_url)
             
             if text.startswith("Error") or text.startswith("Failed"):
-                st.error(f"Could not process URL: {text}")
+                st.error(f"❌ Could not access **{normalized_url}**\n\n**Try:**\n- Check if the website is accessible\n- Use a different article URL\n- Ensure the site allows web scraping")
                 return
             
             # Show original text in expander

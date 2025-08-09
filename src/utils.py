@@ -137,6 +137,34 @@ def generate_mindmap_with_claude(text: str, api_key: str) -> str:
     except Exception as e:
         return f"Error generating mindmap: {str(e)}"
 
+def normalize_url(url: str) -> str:
+    """
+    Normalize URL input to ensure proper format
+    
+    Args:
+        url (str): User input URL
+        
+    Returns:
+        str: Normalized URL with proper protocol
+    """
+    # Remove leading/trailing whitespace
+    url = url.strip()
+    
+    # If empty, return as-is
+    if not url:
+        return url
+    
+    # If already has protocol, return as-is
+    if url.startswith(('http://', 'https://')):
+        return url
+    
+    # If starts with www., add https://
+    if url.startswith('www.'):
+        return f'https://{url}'
+    
+    # For everything else, add https://
+    return f'https://{url}'
+
 def create_mermaid_html(mindmap_code: str) -> str:
     """
     Create HTML to display Mermaid.js diagram
