@@ -546,26 +546,26 @@ def analyze_diagram_complexity(diagram_code: str) -> dict:
     
     analysis['complexity_score'] = min(int(complexity_score), 100)
     
-    # Calculate recommended dimensions based on complexity
-    base_height = 400
+    # Calculate recommended dimensions based on complexity - Much larger base sizes
+    base_height = 1000  # Increased significantly from 600
     if analysis['complexity_score'] <= 20:
         analysis['recommended_height'] = base_height
     elif analysis['complexity_score'] <= 40:
-        analysis['recommended_height'] = base_height + 200
+        analysis['recommended_height'] = base_height + 400  
     elif analysis['complexity_score'] <= 60:
-        analysis['recommended_height'] = base_height + 400
+        analysis['recommended_height'] = base_height + 800  
     elif analysis['complexity_score'] <= 80:
-        analysis['recommended_height'] = base_height + 600
+        analysis['recommended_height'] = base_height + 1200 
     else:
-        analysis['recommended_height'] = base_height + 800
+        analysis['recommended_height'] = base_height + 1600  
     
-    # Ensure minimum readability
-    min_height_per_node = 60
+    # Ensure minimum readability 
+    min_height_per_node = 100  # Increased from 90
     min_required_height = analysis['node_count'] * min_height_per_node
     analysis['recommended_height'] = max(analysis['recommended_height'], min_required_height)
     
-    # Cap maximum height for initial display
-    analysis['recommended_height'] = min(analysis['recommended_height'], 1200)
+    # Cap maximum height for initial display 
+    analysis['recommended_height'] = min(analysis['recommended_height'], 2500)  # Increased from 1800
     
     return analysis
 
@@ -613,6 +613,7 @@ def create_mermaid_html(mindmap_code: str) -> str:
             .diagram-wrapper {{
                 position: relative;
                 width: 100%;
+                min-height: 900px;
                 background: white;
                 border-radius: 15px;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.1);
@@ -693,6 +694,8 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 transition: all 0.3s ease;
                 background: white;
                 height: {complexity_analysis['recommended_height']}px;
+                min-height: 800px;
+                min-width: 1500px;
                 overflow: auto;
                 display: flex;
                 justify-content: center;
@@ -704,9 +707,10 @@ def create_mermaid_html(mindmap_code: str) -> str:
             }}
             
             .mermaid {{
-                padding: 30px;
+                padding: 40px;
                 width: 100%;
                 height: 100%;
+                min-height: 800px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -995,13 +999,13 @@ def create_mermaid_html(mindmap_code: str) -> str:
             let modalRendered = false;
             let currentZoom = 1;
             let modalDiagramElement = null;
-            let currentSize = 'optimal';
+            let currentSize = 'optimal';  // Changed from 'compact' to start with Auto
             
-            // Size configurations
+            // Size configurations - Much more dramatic differences
             const sizeConfigs = {{
-                compact: {{ height: 400, label: 'Compact' }},
-                optimal: {{ height: complexityAnalysis.recommended_height, label: 'Auto' }},
-                large: {{ height: Math.min(complexityAnalysis.recommended_height * 1.5, 1400), label: 'Large' }}
+                compact: {{ height: 800, label: 'Compact' }},  // Increased significantly
+                optimal: {{ height: Math.max(complexityAnalysis.recommended_height, 1000), label: 'Auto' }},  // Ensure minimum 1000px
+                large: {{ height: Math.min(complexityAnalysis.recommended_height * 1.8, 2500), label: 'Large' }}  // Even larger
             }};
             
             // Initialize Mermaid
