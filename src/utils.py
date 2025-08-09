@@ -402,18 +402,197 @@ def normalize_url(url: str) -> str:
     # For everything else, add https://
     return f'https://{url}'
 
+def analyze_diagram_complexity(diagram_code: str) -> dict:
+    """
+    Analyze diagram complexity to determine optimal sizing
+    
+    Args:
+        diagram_code (str): Mermaid diagram code
+        
+    Returns:
+        dict: Complexity analysis with scoring and recommendations
+    """
+    import re
+    
+    # Initialize analysis
+    analysis = {
+        'type': 'unknown',
+        'node_count': 0,
+        'edge_count': 0,
+        'text_density': 0,
+        'max_depth': 0,
+        'branching_factor': 0,
+        'complexity_score': 0,
+        'recommended_height': 500,
+        'recommended_width': '100%'
+    }
+    
+    lines = diagram_code.strip().split('\n')
+    
+    # Determine diagram type
+    if 'mindmap' in diagram_code:
+        analysis['type'] = 'mindmap'
+    elif 'flowchart' in diagram_code:
+        analysis['type'] = 'flowchart'
+    elif 'timeline' in diagram_code:
+        analysis['type'] = 'timeline'
+    elif 'graph' in diagram_code:
+        analysis['type'] = 'network'
+    
+    # Count nodes and analyze structure
+    nodes = set()
+    edges = 0
+    total_text_length = 0
+    max_line_length = 0
+    current_depth = 0
+    max_depth = 0
+    
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('%%'):
+            continue
+            
+        # Count indentation for depth analysis
+        indent_level = (len(line) - len(line.lstrip())) // 2
+        current_depth = max(current_depth, indent_level)
+        max_depth = max(max_depth, current_depth)
+        
+        # Extract nodes and text content
+        if analysis['type'] == 'mindmap':
+            # Mindmap nodes: (Node Name) or root(Name)
+            node_matches = re.findall(r'\(([^)]+)\)', line)
+            for match in node_matches:
+                nodes.add(match)
+                total_text_length += len(match)
+                max_line_length = max(max_line_length, len(match))
+                
+        elif analysis['type'] == 'flowchart':
+            # Flowchart nodes: A[Label], A{Decision}, etc.
+            node_matches = re.findall(r'([A-Z]\d*)\[([^\]]+)\]', line)
+            decision_matches = re.findall(r'([A-Z]\d*)\{([^}]+)\}', line)
+            
+            for match in node_matches + decision_matches:
+                nodes.add(match[0])
+                total_text_length += len(match[1])
+                max_line_length = max(max_line_length, len(match[1]))
+            
+            # Count edges: A --> B, A -->|label| B
+            edge_matches = re.findall(r'-->', line)
+            edges += len(edge_matches)
+            
+        elif analysis['type'] == 'timeline':
+            # Timeline events
+            event_matches = re.findall(r'([^:]+):\s*(.+)', line)
+            for match in event_matches:
+                nodes.add(match[0])
+                total_text_length += len(match[1])
+                max_line_length = max(max_line_length, len(match[1]))
+                
+        elif analysis['type'] == 'network':
+            # Network nodes: A[Label] --- B[Label]
+            node_matches = re.findall(r'([A-Z])\[([^\]]+)\]', line)
+            for match in node_matches:
+                nodes.add(match[0])
+                total_text_length += len(match[1])
+                max_line_length = max(max_line_length, len(match[1]))
+            
+            # Count connections
+            connection_matches = re.findall(r'(---|-->)', line)
+            edges += len(connection_matches)
+    
+    # Update analysis
+    analysis['node_count'] = len(nodes)
+    analysis['edge_count'] = edges
+    analysis['max_depth'] = max_depth
+    analysis['text_density'] = total_text_length / max(len(nodes), 1)
+    analysis['branching_factor'] = edges / max(len(nodes), 1) if len(nodes) > 0 else 0
+    
+    # Calculate complexity score (0-100)
+    complexity_score = 0
+    
+    # Node count contribution (0-30 points)
+    if analysis['node_count'] <= 5:
+        complexity_score += analysis['node_count'] * 3
+    elif analysis['node_count'] <= 15:
+        complexity_score += 15 + (analysis['node_count'] - 5) * 1.5
+    else:
+        complexity_score += 30
+    
+    # Depth contribution (0-25 points)  
+    complexity_score += min(analysis['max_depth'] * 5, 25)
+    
+    # Text density contribution (0-20 points)
+    avg_text_length = analysis['text_density']
+    if avg_text_length > 50:
+        complexity_score += 20
+    elif avg_text_length > 25:
+        complexity_score += 15
+    elif avg_text_length > 15:
+        complexity_score += 10
+    else:
+        complexity_score += avg_text_length / 3
+    
+    # Branching factor contribution (0-15 points)
+    complexity_score += min(analysis['branching_factor'] * 10, 15)
+    
+    # Type-specific bonus (0-10 points)
+    type_complexity = {
+        'mindmap': 5,
+        'flowchart': 8,
+        'timeline': 4,
+        'network': 10
+    }
+    complexity_score += type_complexity.get(analysis['type'], 5)
+    
+    analysis['complexity_score'] = min(int(complexity_score), 100)
+    
+    # Calculate recommended dimensions based on complexity
+    base_height = 400
+    if analysis['complexity_score'] <= 20:
+        analysis['recommended_height'] = base_height
+    elif analysis['complexity_score'] <= 40:
+        analysis['recommended_height'] = base_height + 200
+    elif analysis['complexity_score'] <= 60:
+        analysis['recommended_height'] = base_height + 400
+    elif analysis['complexity_score'] <= 80:
+        analysis['recommended_height'] = base_height + 600
+    else:
+        analysis['recommended_height'] = base_height + 800
+    
+    # Ensure minimum readability
+    min_height_per_node = 60
+    min_required_height = analysis['node_count'] * min_height_per_node
+    analysis['recommended_height'] = max(analysis['recommended_height'], min_required_height)
+    
+    # Cap maximum height for initial display
+    analysis['recommended_height'] = min(analysis['recommended_height'], 1200)
+    
+    return analysis
+
 def create_mermaid_html(mindmap_code: str) -> str:
     """
-    Create HTML to display Mermaid.js diagram with modal functionality
+    Create HTML to display Mermaid.js diagram with adaptive sizing and modal functionality
     
     Args:
         mindmap_code (str): Mermaid.js code
         
     Returns:
-        str: HTML code for displaying the mindmap with modal and copy features
+        str: HTML code for displaying the mindmap with smart sizing and modal features
     """
+    import json
+    
+    # Analyze diagram complexity for optimal sizing
+    complexity_analysis = analyze_diagram_complexity(mindmap_code)
+    
     # Escape the code for JavaScript
     escaped_code = mindmap_code.replace('`', '\\`').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+    
+    # Create complexity info for display
+    complexity_info = f"""
+    Complexity Score: {complexity_analysis['complexity_score']}/100
+    Nodes: {complexity_analysis['node_count']} | Type: {complexity_analysis['type'].title()}
+    Auto-sized: {complexity_analysis['recommended_height']}px height
+    """.strip()
     
     html_code = f"""
     <!DOCTYPE html>
@@ -427,81 +606,173 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 margin: 0;
                 padding: 10px;
                 background-color: #f8f9fa;
+                overflow-x: hidden;
+            }}
+            
+            /* Adaptive Container Styles */
+            .diagram-wrapper {{
+                position: relative;
+                width: 100%;
+                background: white;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
                 overflow: hidden;
             }}
+            
+            .diagram-controls {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 20px;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border-bottom: 2px solid #dee2e6;
+            }}
+            
+            .size-controls {{
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }}
+            
+            .size-label {{
+                font-size: 12px;
+                font-weight: bold;
+                color: #6c757d;
+                margin-right: 8px;
+            }}
+            
+            .size-btn {{
+                padding: 6px 12px;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                background: white;
+                color: #495057;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            }}
+            
+            .size-btn:hover {{
+                background: #f8f9fa;
+                border-color: #2E86AB;
+                color: #2E86AB;
+            }}
+            
+            .size-btn.active {{
+                background: #2E86AB;
+                color: white;
+                border-color: #2E86AB;
+            }}
+            
+            .complexity-info {{
+                font-size: 10px;
+                color: #6c757d;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }}
+            
+            .expand-hint {{
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 11px;
+                color: #6c757d;
+                cursor: pointer;
+                transition: color 0.3s ease;
+            }}
+            
+            .expand-hint:hover {{
+                color: #2E86AB;
+            }}
+            
             .mermaid-container {{
                 position: relative;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                border-radius: 10px;
-                overflow: hidden;
-            }}
-            .mermaid-container:hover {{
-                transform: scale(1.02);
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            }}
-            .mermaid {{
+                background: white;
+                height: {complexity_analysis['recommended_height']}px;
+                overflow: auto;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                background-color: white;
-                padding: 15px;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }}
+            
+            .mermaid-container:hover {{
+                background: #fafbfc;
+            }}
+            
+            .mermaid {{
+                padding: 30px;
                 width: 100%;
                 height: 100%;
-                box-sizing: border-box;
-                overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 position: relative;
-                min-height: 400px;
             }}
+            
             .mermaid svg {{
-                max-width: 100% !important;
-                max-height: 100% !important;
+                max-width: 95% !important;
+                max-height: 95% !important;
                 width: auto !important;
                 height: auto !important;
             }}
-            .click-hint {{
+            
+            .click-overlay {{
                 position: absolute;
-                top: 10px;
-                right: 10px;
-                background: rgba(46, 134, 171, 0.9);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: bold;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(46, 134, 171, 0.05);
                 opacity: 0;
-                transition: all 0.3s ease;
+                transition: opacity 0.3s ease;
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 z-index: 10;
             }}
-            .mermaid-container:hover .click-hint {{
+            
+            .mermaid-container:hover .click-overlay {{
                 opacity: 1;
-                transform: translateY(-2px);
             }}
             
-            /* Modal Styles */
+            .click-hint {{
+                background: rgba(46, 134, 171, 0.9);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 25px;
+                font-size: 14px;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }}
+            
+            /* Modal Styles - Full Screen Experience */
             .modal {{
                 display: none;
                 position: fixed;
                 z-index: 9999;
                 left: 0;
                 top: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.8);
-                animation: fadeIn 0.3s ease;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(0,0,0,0.95);
+                animation: fadeIn 0.4s ease;
             }}
             .modal-content {{
                 position: relative;
                 background-color: white;
-                margin: 2% auto;
+                margin: 0;
                 padding: 0;
-                border-radius: 15px;
-                width: 95%;
-                max-width: 1400px;
-                height: 90%;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                border-radius: 0;
+                width: 100%;
+                height: 100%;
+                box-shadow: none;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
@@ -510,12 +781,14 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 20px 25px;
+                padding: 15px 25px;
                 background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
                 color: white;
+                flex-shrink: 0;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             }}
             .modal-title {{
-                font-size: 24px;
+                font-size: 20px;
                 font-weight: bold;
                 margin: 0;
                 display: flex;
@@ -527,11 +800,11 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 gap: 12px;
             }}
             .modal-btn {{
-                padding: 12px 20px;
+                padding: 10px 18px;
                 border: none;
-                border-radius: 8px;
+                border-radius: 6px;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: bold;
                 transition: all 0.3s ease;
                 display: flex;
@@ -544,7 +817,7 @@ def create_mermaid_html(mindmap_code: str) -> str:
             }}
             .copy-btn:hover {{
                 background: #218838;
-                transform: translateY(-2px);
+                transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
             }}
             .close-btn {{
@@ -554,7 +827,7 @@ def create_mermaid_html(mindmap_code: str) -> str:
             }}
             .close-btn:hover {{
                 background: rgba(255,255,255,0.3);
-                transform: translateY(-2px);
+                transform: translateY(-1px);
             }}
             .modal-diagram {{
                 flex: 1;
@@ -562,28 +835,71 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 justify-content: center;
                 align-items: center;
                 background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
-                padding: 30px;
+                padding: 40px;
                 overflow: auto;
+                position: relative;
             }}
             .modal-mermaid {{
                 background: white;
-                padding: 40px;
-                border-radius: 15px;
-                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-                max-width: 100%;
-                max-height: 100%;
-                overflow: auto;
-                min-width: 600px;
-                min-height: 400px;
+                padding: 60px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+                max-width: none;
+                max-height: none;
+                overflow: visible;
+                min-width: 80vw;
+                min-height: 70vh;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                position: relative;
             }}
             .modal-mermaid svg {{
                 max-width: none !important;
                 max-height: none !important;
                 width: auto !important;
                 height: auto !important;
+                min-width: 600px !important;
+                min-height: 400px !important;
+            }}
+            .zoom-controls {{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 8px;
+                z-index: 100;
+            }}
+            .zoom-btn {{
+                width: 40px;
+                height: 40px;
+                border: none;
+                border-radius: 50%;
+                background: rgba(46, 134, 171, 0.9);
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }}
+            .zoom-btn:hover {{
+                background: rgba(46, 134, 171, 1);
+                transform: scale(1.1);
+            }}
+            .fullscreen-hint {{
+                position: absolute;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.7);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                opacity: 0.8;
             }}
             .copy-success {{
                 background: #d4edda !important;
@@ -604,10 +920,32 @@ def create_mermaid_html(mindmap_code: str) -> str:
         </style>
     </head>
     <body>
-        <div class="mermaid-container" onclick="openModal()">
-            <div class="mermaid" id="diagram">{mindmap_code}</div>
-            <div class="click-hint">
-                <i class="fas fa-expand-alt"></i> Click to enlarge
+        <div class="diagram-wrapper">
+            <div class="diagram-controls">
+                <div class="size-controls">
+                    <span class="size-label">Size:</span>
+                    <button class="size-btn" onclick="setSize('compact')" id="compactBtn">Compact</button>
+                    <button class="size-btn active" onclick="setSize('optimal')" id="optimalBtn">Auto</button>
+                    <button class="size-btn" onclick="setSize('large')" id="largeBtn">Large</button>
+                </div>
+                <div class="complexity-info">
+                    <i class="fas fa-brain"></i>
+                    <span>{complexity_info}</span>
+                </div>
+                <div class="expand-hint" onclick="openModal()">
+                    <i class="fas fa-expand-alt"></i>
+                    <span>Full Screen</span>
+                </div>
+            </div>
+            
+            <div class="mermaid-container" onclick="openModal()" id="diagramContainer">
+                <div class="mermaid" id="diagram">{mindmap_code}</div>
+                <div class="click-overlay">
+                    <div class="click-hint">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        Click for full screen view
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -616,8 +954,8 @@ def create_mermaid_html(mindmap_code: str) -> str:
             <div class="modal-content">
                 <div class="modal-header">
                     <h2 class="modal-title">
-                        <i class="fas fa-diagram-project"></i> 
-                        <span>Full Size Diagram</span>
+                        <i class="fas fa-expand-arrows-alt"></i> 
+                        <span>Full Screen View</span>
                     </h2>
                     <div class="modal-actions">
                         <button class="modal-btn copy-btn" onclick="copyDiagramCode()" id="copyBtn">
@@ -632,14 +970,39 @@ def create_mermaid_html(mindmap_code: str) -> str:
                     <div class="modal-mermaid" id="modalMermaidContainer">
                         <!-- Diagram will be rendered here -->
                     </div>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="fullscreen-hint">
+                        <i class="fas fa-mouse"></i> Scroll to zoom • Click & drag to pan
+                    </div>
                 </div>
             </div>
         </div>
 
         <script>
-            // Store the diagram code
+            // Store the diagram code and complexity analysis
             const diagramCode = `{escaped_code}`;
+            const complexityAnalysis = {json.dumps(complexity_analysis)};
             let modalRendered = false;
+            let currentZoom = 1;
+            let modalDiagramElement = null;
+            let currentSize = 'optimal';
+            
+            // Size configurations
+            const sizeConfigs = {{
+                compact: {{ height: 400, label: 'Compact' }},
+                optimal: {{ height: complexityAnalysis.recommended_height, label: 'Auto' }},
+                large: {{ height: Math.min(complexityAnalysis.recommended_height * 1.5, 1400), label: 'Large' }}
+            }};
             
             // Initialize Mermaid
             mermaid.initialize({{
@@ -661,6 +1024,23 @@ def create_mermaid_html(mindmap_code: str) -> str:
                 }}
             }});
 
+            // Size control functions
+            function setSize(size) {{
+                currentSize = size;
+                const container = document.getElementById('diagramContainer');
+                const config = sizeConfigs[size];
+                
+                container.style.height = config.height + 'px';
+                
+                // Update button states
+                document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(size + 'Btn').classList.add('active');
+                
+                // Update complexity info to show current size
+                const complexityInfo = document.querySelector('.complexity-info span');
+                complexityInfo.textContent = `${{complexityAnalysis.complexity_score}}/100 | ${{complexityAnalysis.node_count}} nodes | ${{config.label}}: ${{config.height}}px`;
+            }}
+
             // Modal functions
             async function openModal() {{
                 const modal = document.getElementById('diagramModal');
@@ -673,24 +1053,106 @@ def create_mermaid_html(mindmap_code: str) -> str:
                     
                     // Create a unique ID for the modal diagram
                     const modalDiagramId = 'modalDiagram_' + Date.now();
-                    container.innerHTML = `<div class="mermaid" id="${{modalDiagramId}}">${{diagramCode}}</div>`;
+                    container.innerHTML = `<div class="mermaid" id="${{modalDiagramId}}" style="transform-origin: center center;">${{diagramCode}}</div>`;
                     
                     // Re-initialize mermaid for the modal content
                     try {{
                         await mermaid.run({{ nodes: [document.getElementById(modalDiagramId)] }});
+                        modalDiagramElement = document.getElementById(modalDiagramId);
                         modalRendered = true;
+                        
+                        // Add mouse wheel zoom
+                        container.addEventListener('wheel', handleZoom, {{ passive: false }});
+                        
+                        // Add click and drag panning
+                        let isPanning = false;
+                        let startX, startY, scrollLeft, scrollTop;
+                        
+                        container.addEventListener('mousedown', (e) => {{
+                            if (e.target.closest('svg')) {{
+                                isPanning = true;
+                                startX = e.pageX - container.offsetLeft;
+                                startY = e.pageY - container.offsetTop;
+                                scrollLeft = container.scrollLeft;
+                                scrollTop = container.scrollTop;
+                                container.style.cursor = 'grabbing';
+                            }}
+                        }});
+                        
+                        container.addEventListener('mouseleave', () => {{
+                            isPanning = false;
+                            container.style.cursor = 'grab';
+                        }});
+                        
+                        container.addEventListener('mouseup', () => {{
+                            isPanning = false;
+                            container.style.cursor = 'grab';
+                        }});
+                        
+                        container.addEventListener('mousemove', (e) => {{
+                            if (!isPanning) return;
+                            e.preventDefault();
+                            const x = e.pageX - container.offsetLeft;
+                            const y = e.pageY - container.offsetTop;
+                            const walkX = (x - startX) * 2;
+                            const walkY = (y - startY) * 2;
+                            container.scrollLeft = scrollLeft - walkX;
+                            container.scrollTop = scrollTop - walkY;
+                        }});
+                        
+                        container.style.cursor = 'grab';
+                        
                     }} catch (error) {{
                         console.log('Mermaid render error:', error);
                         // Fallback: try with mermaid.init
                         mermaid.init(undefined, document.getElementById(modalDiagramId));
+                        modalDiagramElement = document.getElementById(modalDiagramId);
                         modalRendered = true;
                     }}
                 }}
+                
+                // Reset zoom when opening
+                resetZoom();
             }}
 
             function closeModal() {{
                 document.getElementById('diagramModal').style.display = 'none';
                 document.body.style.overflow = 'auto';
+            }}
+
+            // Zoom functions
+            function handleZoom(event) {{
+                event.preventDefault();
+                const delta = event.deltaY > 0 ? -0.1 : 0.1;
+                currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+                applyZoom();
+            }}
+
+            function zoomIn() {{
+                currentZoom = Math.min(3, currentZoom + 0.2);
+                applyZoom();
+            }}
+
+            function zoomOut() {{
+                currentZoom = Math.max(0.3, currentZoom - 0.2);
+                applyZoom();
+            }}
+
+            function resetZoom() {{
+                currentZoom = 1;
+                applyZoom();
+                
+                // Center the diagram
+                const container = document.getElementById('modalMermaidContainer');
+                container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+                container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+            }}
+
+            function applyZoom() {{
+                if (modalDiagramElement) {{
+                    modalDiagramElement.style.transform = `scale(${{currentZoom}})`;
+                    modalDiagramElement.style.transition = 'transform 0.2s ease';
+                }}
             }}
 
             // Copy functionality
