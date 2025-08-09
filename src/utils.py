@@ -139,6 +139,167 @@ Return ONLY the mindmap code without any markdown formatting."""
     except Exception as e:
         return f"Error generating mindmap: {str(e)}"
 
+def generate_flowchart_with_claude(text: str, api_key: str) -> str:
+    """
+    Generate Mermaid.js flowchart code using Claude
+    
+    Args:
+        text (str): Text to convert to flowchart
+        api_key (str): Anthropic API key
+        
+    Returns:
+        str: Mermaid.js flowchart code
+    """
+    client = anthropic.Anthropic(api_key=api_key)
+    
+    prompt = f"""Create a Mermaid.js flowchart for neurodiverse learners.
+
+CRITICAL RULES:
+1. Start with: flowchart TD
+2. Use simple node IDs: A, B, C, etc.
+3. Node labels in brackets: A[Start Here]
+4. Arrows: A --> B
+5. Decisions: C{{Question?}}
+6. Decision paths: C -->|Yes| D
+7. Maximum 8-10 nodes total
+8. Clear, simple language
+
+EXACT FORMAT:
+flowchart TD
+    A[Starting Point] --> B[Next Step]
+    B --> C{{Decision Point?}}
+    C -->|Yes| D[Path A]
+    C -->|No| E[Path B]
+    D --> F[Final Result]
+    E --> F
+
+Text to convert: {text[:2000]}
+
+Return ONLY the flowchart code without markdown formatting."""
+    
+    try:
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            temperature=0.2,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        return message.content[0].text.strip()
+    except Exception as e:
+        return f"Error generating flowchart: {str(e)}"
+
+def generate_timeline_with_claude(text: str, api_key: str) -> str:
+    """
+    Generate Mermaid.js timeline code using Claude
+    
+    Args:
+        text (str): Text to convert to timeline
+        api_key (str): Anthropic API key
+        
+    Returns:
+        str: Mermaid.js timeline code
+    """
+    client = anthropic.Anthropic(api_key=api_key)
+    
+    prompt = f"""Create a Mermaid.js timeline for neurodiverse learners.
+
+CRITICAL RULES:
+1. Start with: timeline
+2. Add title: title Timeline Name
+3. Use sections if multiple periods
+4. Format: Period : Event description
+5. Keep events brief and clear
+6. Maximum 6-8 events total
+7. Chronological order
+
+EXACT FORMAT:
+timeline
+    title Article Timeline
+    section Early Period
+        Event 1 : Brief description
+        Event 2 : Another event
+    section Later Period
+        Event 3 : More recent event
+        Event 4 : Latest development
+
+Text to convert: {text[:2000]}
+
+Return ONLY the timeline code without markdown formatting."""
+    
+    try:
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            temperature=0.2,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        return message.content[0].text.strip()
+    except Exception as e:
+        return f"Error generating timeline: {str(e)}"
+
+def generate_network_with_claude(text: str, api_key: str) -> str:
+    """
+    Generate Mermaid.js network/graph code using Claude
+    
+    Args:
+        text (str): Text to convert to network
+        api_key (str): Anthropic API key
+        
+    Returns:
+        str: Mermaid.js graph code
+    """
+    client = anthropic.Anthropic(api_key=api_key)
+    
+    prompt = f"""Create a Mermaid.js concept network for neurodiverse learners.
+
+CRITICAL RULES:
+1. Start with: graph TD
+2. Use simple node IDs: A, B, C, etc.
+3. Node labels in brackets: A[Concept Name]
+4. Connections: A --- B or A --> B
+5. Show relationships between concepts
+6. Maximum 8 nodes total
+7. Add styling for key nodes
+
+EXACT FORMAT:
+graph TD
+    A[Main Concept] --- B[Related Idea]
+    A --- C[Another Concept]
+    B --- D[Supporting Point]
+    C --- E[Detail]
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+
+Text to convert: {text[:2000]}
+
+Return ONLY the graph code without markdown formatting."""
+    
+    try:
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            temperature=0.2,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        return message.content[0].text.strip()
+    except Exception as e:
+        return f"Error generating network: {str(e)}"
+
 def validate_and_fix_mermaid(mermaid_code: str) -> str:
     """
     Validate and fix common Mermaid.js syntax issues
