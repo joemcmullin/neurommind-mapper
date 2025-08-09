@@ -572,12 +572,6 @@ This tool is based on research showing:
 - [ ] API for third-party developers
 - [ ] Advanced analytics
 
-## 🏆 Awards and Recognition
-
-- **Accessibility Innovation Award** - Pending
-- **EdTech Excellence** - Pending
-- **Open Source Community Choice** - Pending
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -607,32 +601,4 @@ copies or substantial portions of the Software.
 - **Neurodiverse community** for feedback and insights
 - **Open source contributors** worldwide
 
-## 📞 Support
-
-### Getting Help
-
-**📧 Email**: support@neurommind-mapper.com  
-**💬 Discord**: [Join our community](https://discord.gg/neurommind)  
-**🐛 Issues**: [GitHub Issues](https://github.com/your-username/neurommind-mapper/issues)  
-**📖 Docs**: [Full Documentation](https://docs.neurommind-mapper.com)
-
-### Community
-
-- **Discord Server** - Real-time chat and support
-- **GitHub Discussions** - Feature requests and general discussion
-- **Reddit Community** - r/NeuroMindMapper
-- **Twitter** - @NeuroMindMapper for updates
-
 ---
-
-<div align="center">
-
-**Built with ❤️ for the neurodiverse community**
-
-[![Discord](https://img.shields.io/discord/placeholder.svg)](https://discord.gg/neurommind)
-[![GitHub stars](https://img.shields.io/github/stars/your-username/neurommind-mapper.svg)](https://github.com/your-username/neurommind-mapper/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/your-username/neurommind-mapper.svg)](https://github.com/your-username/neurommind-mapper/issues)
-
-*Transforming how neurodiverse minds engage with information*
-
-</div>
