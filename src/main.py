@@ -1,8 +1,15 @@
 import streamlit as st
 import os
+import sys
 from dotenv import load_dotenv
 from streamlit.components.v1 import html
-from .utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html
+
+# Add current directory to Python path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
+# Now import utils
+from utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html
 
 # Load environment variables
 load_dotenv()
