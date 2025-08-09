@@ -11,10 +11,10 @@ if current_dir not in sys.path:
 
 # Now import utils (try multiple approaches)
 try:
-    from utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url
+    from utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url, validate_and_fix_mermaid
 except ImportError:
     try:
-        from neurommind_mapper.utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url
+        from neurommind_mapper.utils import scrape_text, summarize_with_claude, generate_mindmap_with_claude, create_mermaid_html, normalize_url, validate_and_fix_mermaid
     except ImportError:
         # Last resort - import from full path
         import importlib.util
@@ -27,6 +27,7 @@ except ImportError:
         generate_mindmap_with_claude = utils.generate_mindmap_with_claude
         create_mermaid_html = utils.create_mermaid_html
         normalize_url = utils.normalize_url
+        validate_and_fix_mermaid = utils.validate_and_fix_mermaid
 
 # Load environment variables
 load_dotenv()
@@ -157,14 +158,41 @@ def main():
                 st.error(mindmap_code)
                 return
             
-            # Show mindmap code in expander
-            with st.expander("🔧 View Mermaid Code"):
-                st.code(mindmap_code, language="text")
-            
-            # Display mindmap
-            st.markdown('<div class="success-box"><strong>🗺️ Your Visual Mindmap</strong></div>', unsafe_allow_html=True)
-            html_content = create_mermaid_html(mindmap_code)
-            html(html_content, width=800, height=600)
+            # Validate and fix the Mermaid code
+            try:
+                validated_code = validate_and_fix_mermaid(mindmap_code)
+                
+                # Show mindmap code in expander
+                with st.expander("🔧 View Mermaid Code"):
+                    st.code(validated_code, language="text")
+                
+                # Display mindmap
+                st.markdown('<div class="success-box"><strong>🗺️ Your Visual Mindmap</strong></div>', unsafe_allow_html=True)
+                html_content = create_mermaid_html(validated_code)
+                html(html_content, width=800, height=600)
+                
+            except Exception as e:
+                st.error(f"⚠️ Mindmap generation failed: {str(e)}")
+                st.info("💡 **Tip**: Try with a shorter article or different content")
+                
+                # Show the raw code for debugging
+                with st.expander("🔧 Debug: Raw Mermaid Code"):
+                    st.code(mindmap_code, language="text")
+                
+                # Provide a simple fallback mindmap
+                st.warning("🔄 Using simplified mindmap format...")
+                fallback_code = """mindmap
+  root(Article Summary)
+    (Main Topics)
+      (Key Point 1)
+      (Key Point 2)
+      (Key Point 3)
+    (Important Details)
+      (Detail A)
+      (Detail B)"""
+                
+                html_content = create_mermaid_html(fallback_code)
+                html(html_content, width=800, height=600)
     
     with col2:
         st.markdown("### 💡 Tips for Better Results")

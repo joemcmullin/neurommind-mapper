@@ -90,36 +90,38 @@ def generate_mindmap_with_claude(text: str, api_key: str) -> str:
     """
     client = anthropic.Anthropic(api_key=api_key)
     
-    prompt = f"""You are creating a mindmap for someone with ADHD and other neurodiverse learning needs. 
-    
-    Please convert the following text into a Mermaid.js mindmap format. Follow these guidelines:
-    
-    1. Use clear, concise node labels
-    2. Organize information hierarchically from main topics to subtopics
-    3. Limit each branch to 3-5 items to avoid overwhelming
-    4. Use descriptive but brief text
-    5. Include icons using ::icon(fa fa-icon-name) where appropriate
-    6. Structure should be: mindmap root(Main Topic) with branches
-    
-    Example format:
-    ```
-    mindmap
-      root(Main Topic)
-        (Branch 1)
-          ::icon(fa fa-lightbulb)
-          (Subtopic 1)
-          (Subtopic 2)
-        (Branch 2)
-          ::icon(fa fa-gear)
-          (Subtopic 3)
-          (Subtopic 4)
-    ```
-    
-    Text to convert:
-    {text[:3000]}
-    
-    Please provide ONLY the Mermaid.js code, starting with 'mindmap' and nothing else.
-    """
+    prompt = f"""Create a Mermaid.js mindmap with PERFECT syntax for neurodiverse learners.
+
+CRITICAL RULES:
+1. NO markdown code blocks - do NOT include ```
+2. Start with exactly: mindmap
+3. Second line must be: root(Topic Name)
+4. Use exactly 2 spaces for main branches, 6 spaces for sub-items
+5. All labels in parentheses: (Label Name)
+6. Icons use ::icon(fa fa-name) and go UNDER branch names
+7. Maximum 4 main branches with 2-4 sub-items each
+
+EXACT FORMAT:
+mindmap
+  root(Main Topic)
+    (Branch 1)
+      ::icon(fa fa-lightbulb)
+      (Sub Item A)
+      (Sub Item B)
+    (Branch 2)
+      ::icon(fa fa-cogs)
+      (Sub Item C)
+      (Sub Item D)
+
+FORBIDDEN:
+- No ``` or markdown
+- No extra indentation
+- No special characters in labels
+- No more than 4 main branches
+
+Text to convert: {text[:2000]}
+
+Return ONLY the mindmap code without any markdown formatting."""
     
     try:
         message = client.messages.create(
@@ -136,6 +138,80 @@ def generate_mindmap_with_claude(text: str, api_key: str) -> str:
         return message.content[0].text.strip()
     except Exception as e:
         return f"Error generating mindmap: {str(e)}"
+
+def validate_and_fix_mermaid(mermaid_code: str) -> str:
+    """
+    Validate and fix common Mermaid.js syntax issues
+    
+    Args:
+        mermaid_code (str): Raw Mermaid.js code from AI
+        
+    Returns:
+        str: Cleaned and validated Mermaid.js code
+    """
+    # Remove markdown code block markers
+    mermaid_code = mermaid_code.replace('```mermaid', '').replace('```', '').strip()
+    
+    lines = mermaid_code.strip().split('\n')
+    fixed_lines = ['mindmap']
+    root_found = False
+    current_branch = None
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Skip empty lines and mindmap declaration
+        if not line or line == 'mindmap':
+            continue
+            
+        # Remove problematic characters
+        if line == '(```)' or '```' in line:
+            continue
+            
+        # Handle root element
+        if not root_found and line.startswith('(') and line.endswith(')'):
+            # First meaningful line becomes root
+            topic = line.strip('()')
+            fixed_lines.append(f'  root({topic})')
+            root_found = True
+            continue
+            
+        # Handle icons
+        if line.startswith('::icon('):
+            if current_branch:
+                fixed_lines.append(f'      {line}')
+            continue
+            
+        # Handle regular nodes
+        if line.startswith('(') and line.endswith(')'):
+            content = line.strip('()')
+            
+            # Determine if this should be a main branch or sub-item
+            # Main branches are typically broader topics
+            main_branch_keywords = ['marketing', 'strategy', 'content', 'advertising', 'automation', 'analytics', 'creation', 'search', 'social']
+            
+            is_main_branch = any(keyword in content.lower() for keyword in main_branch_keywords)
+            
+            if is_main_branch and len([l for l in fixed_lines if l.startswith('    (')]) < 4:
+                # This is a main branch
+                fixed_lines.append(f'    ({content})')
+                current_branch = content
+            else:
+                # This is a sub-item
+                fixed_lines.append(f'      ({content})')
+    
+    # Ensure we have a valid structure
+    if len(fixed_lines) < 3:  # mindmap + root + at least one branch
+        return """mindmap
+  root(Article Content)
+    (Main Topics)
+      (Key Point 1)
+      (Key Point 2)
+    (Details)
+      (Important Info)
+      (Supporting Facts)"""
+    
+    return '\n'.join(fixed_lines)
 
 def normalize_url(url: str) -> str:
     """
