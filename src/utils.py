@@ -63,7 +63,7 @@ def summarize_with_claude(text: str, api_key: str) -> str:
     
     try:
         message = client.messages.create(
-            model="claude-3-sonnet-20240229",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=1000,
             temperature=0.3,
             messages=[
@@ -123,7 +123,7 @@ def generate_mindmap_with_claude(text: str, api_key: str) -> str:
     
     try:
         message = client.messages.create(
-            model="claude-3-sonnet-20240229",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=1500,
             temperature=0.2,
             messages=[

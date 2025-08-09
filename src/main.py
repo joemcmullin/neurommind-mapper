@@ -177,12 +177,12 @@ def main():
         """)
         
         st.markdown("### 🎨 Mindmap Features")
-        st.success("""
-        ✅ Hierarchical organization
-        ✅ Color-coded branches  
-        ✅ FontAwesome icons
-        ✅ Responsive design
-        ✅ Clean, ADHD-friendly layout
+        st.markdown("""
+        - ✅ **Hierarchical organization**
+        - ✅ **Color-coded branches**  
+        - ✅ **FontAwesome icons**
+        - ✅ **Responsive design**
+        - ✅ **Clean, ADHD-friendly layout**
         """)
 
 if __name__ == "__main__":
