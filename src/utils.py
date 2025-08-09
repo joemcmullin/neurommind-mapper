@@ -404,14 +404,17 @@ def normalize_url(url: str) -> str:
 
 def create_mermaid_html(mindmap_code: str) -> str:
     """
-    Create HTML to display Mermaid.js diagram
+    Create HTML to display Mermaid.js diagram with modal functionality
     
     Args:
         mindmap_code (str): Mermaid.js code
         
     Returns:
-        str: HTML code for displaying the mindmap
+        str: HTML code for displaying the mindmap with modal and copy features
     """
+    # Escape the code for JavaScript
+    escaped_code = mindmap_code.replace('`', '\\`').replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+    
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -421,28 +424,331 @@ def create_mermaid_html(mindmap_code: str) -> str:
         <style>
             body {{
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                margin: 20px;
+                margin: 0;
+                padding: 10px;
                 background-color: #f8f9fa;
+                overflow: hidden;
+            }}
+            .mermaid-container {{
+                position: relative;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border-radius: 10px;
+                overflow: hidden;
+            }}
+            .mermaid-container:hover {{
+                transform: scale(1.02);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             }}
             .mermaid {{
                 display: flex;
                 justify-content: center;
+                align-items: center;
                 background-color: white;
-                padding: 20px;
+                padding: 15px;
                 border-radius: 10px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+                overflow: hidden;
+                position: relative;
+                min-height: 400px;
+            }}
+            .mermaid svg {{
+                max-width: 100% !important;
+                max-height: 100% !important;
+                width: auto !important;
+                height: auto !important;
+            }}
+            .click-hint {{
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(46, 134, 171, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: bold;
+                opacity: 0;
+                transition: all 0.3s ease;
+                z-index: 10;
+            }}
+            .mermaid-container:hover .click-hint {{
+                opacity: 1;
+                transform: translateY(-2px);
+            }}
+            
+            /* Modal Styles */
+            .modal {{
+                display: none;
+                position: fixed;
+                z-index: 9999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.8);
+                animation: fadeIn 0.3s ease;
+            }}
+            .modal-content {{
+                position: relative;
+                background-color: white;
+                margin: 2% auto;
+                padding: 0;
+                border-radius: 15px;
+                width: 95%;
+                max-width: 1400px;
+                height: 90%;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }}
+            .modal-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px 25px;
+                background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+                color: white;
+            }}
+            .modal-title {{
+                font-size: 24px;
+                font-weight: bold;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }}
+            .modal-actions {{
+                display: flex;
+                gap: 12px;
+            }}
+            .modal-btn {{
+                padding: 12px 20px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }}
+            .copy-btn {{
+                background: #28a745;
+                color: white;
+            }}
+            .copy-btn:hover {{
+                background: #218838;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+            }}
+            .close-btn {{
+                background: rgba(255,255,255,0.2);
+                color: white;
+                border: 1px solid rgba(255,255,255,0.3);
+            }}
+            .close-btn:hover {{
+                background: rgba(255,255,255,0.3);
+                transform: translateY(-2px);
+            }}
+            .modal-diagram {{
+                flex: 1;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
+                padding: 30px;
+                overflow: auto;
+            }}
+            .modal-mermaid {{
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                max-width: 100%;
+                max-height: 100%;
+                overflow: auto;
+                min-width: 600px;
+                min-height: 400px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }}
+            .modal-mermaid svg {{
+                max-width: none !important;
+                max-height: none !important;
+                width: auto !important;
+                height: auto !important;
+            }}
+            .copy-success {{
+                background: #d4edda !important;
+                color: #155724 !important;
+            }}
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: scale(0.9); }}
+                to {{ opacity: 1; transform: scale(1); }}
+            }}
+            @keyframes copySuccess {{
+                0% {{ transform: scale(1); }}
+                50% {{ transform: scale(1.05); }}
+                100% {{ transform: scale(1); }}
+            }}
+            .copy-animation {{
+                animation: copySuccess 0.4s ease;
             }}
         </style>
     </head>
     <body>
-        <div class="mermaid">{mindmap_code}</div>
+        <div class="mermaid-container" onclick="openModal()">
+            <div class="mermaid" id="diagram">{mindmap_code}</div>
+            <div class="click-hint">
+                <i class="fas fa-expand-alt"></i> Click to enlarge
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="diagramModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">
+                        <i class="fas fa-diagram-project"></i> 
+                        <span>Full Size Diagram</span>
+                    </h2>
+                    <div class="modal-actions">
+                        <button class="modal-btn copy-btn" onclick="copyDiagramCode()" id="copyBtn">
+                            <i class="fas fa-copy"></i> Copy Code
+                        </button>
+                        <button class="modal-btn close-btn" onclick="closeModal()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-diagram">
+                    <div class="modal-mermaid" id="modalMermaidContainer">
+                        <!-- Diagram will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
+            // Store the diagram code
+            const diagramCode = `{escaped_code}`;
+            let modalRendered = false;
+            
+            // Initialize Mermaid
             mermaid.initialize({{
                 startOnLoad: true,
                 theme: 'default',
+                flowchart: {{
+                    useMaxWidth: false,
+                    htmlLabels: true
+                }},
                 mindmap: {{
-                    padding: 20
+                    padding: 10,
+                    useMaxWidth: false
+                }},
+                timeline: {{
+                    useMaxWidth: false
+                }},
+                gitGraph: {{
+                    useMaxWidth: false
                 }}
+            }});
+
+            // Modal functions
+            async function openModal() {{
+                const modal = document.getElementById('diagramModal');
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                
+                // Render diagram in modal if not already rendered
+                if (!modalRendered) {{
+                    const container = document.getElementById('modalMermaidContainer');
+                    
+                    // Create a unique ID for the modal diagram
+                    const modalDiagramId = 'modalDiagram_' + Date.now();
+                    container.innerHTML = `<div class="mermaid" id="${{modalDiagramId}}">${{diagramCode}}</div>`;
+                    
+                    // Re-initialize mermaid for the modal content
+                    try {{
+                        await mermaid.run({{ nodes: [document.getElementById(modalDiagramId)] }});
+                        modalRendered = true;
+                    }} catch (error) {{
+                        console.log('Mermaid render error:', error);
+                        // Fallback: try with mermaid.init
+                        mermaid.init(undefined, document.getElementById(modalDiagramId));
+                        modalRendered = true;
+                    }}
+                }}
+            }}
+
+            function closeModal() {{
+                document.getElementById('diagramModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }}
+
+            // Copy functionality
+            async function copyDiagramCode() {{
+                try {{
+                    await navigator.clipboard.writeText(diagramCode);
+                    showCopySuccess();
+                }} catch (err) {{
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = diagramCode;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showCopySuccess();
+                }}
+            }}
+
+            function showCopySuccess() {{
+                const copyBtn = document.getElementById('copyBtn');
+                const originalText = copyBtn.innerHTML;
+                
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyBtn.classList.add('copy-success', 'copy-animation');
+                
+                setTimeout(() => {{
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('copy-success', 'copy-animation');
+                }}, 2500);
+            }}
+
+            // Close modal when clicking outside
+            window.onclick = function(event) {{
+                const modal = document.getElementById('diagramModal');
+                if (event.target === modal) {{
+                    closeModal();
+                }}
+            }}
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(event) {{
+                if (event.key === 'Escape') {{
+                    closeModal();
+                }}
+            }});
+
+            // Ensure main diagram renders properly
+            document.addEventListener('DOMContentLoaded', function() {{
+                // Force re-render of main diagram if needed
+                setTimeout(() => {{
+                    const mainDiagram = document.getElementById('diagram');
+                    if (mainDiagram && !mainDiagram.querySelector('svg')) {{
+                        mermaid.init(undefined, mainDiagram);
+                    }}
+                }}, 100);
             }});
         </script>
     </body>
